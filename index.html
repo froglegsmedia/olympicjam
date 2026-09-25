@@ -497,7 +497,14 @@ const VIDEO_FILES = [
 const VIDEOS = VIDEO_FILES.map(f => ({ src: /^https?:/.test(f) ? f : VIDEO_BASE + encodeURIComponent(f) }));
 
 // Hero video at the top of the home page (in the /videos folder).
-const HERO_VIDEO = "hero.mp4";
+// The site tries these names in order and uses the first one that loads.
+// The uploaded file has special characters in its name, so a few versions are listed.
+// Renaming the file to hero.mp4 is the most reliable option.
+const HERO_VIDEO = [
+  "hero.mp4",
+  ...["\uF022", "\uF03A", "\uF02F", ":", "\u2215", "\u2044", "/", "-", "."]
+     .map(sep => `JAMNATION - Rainbow 4${sep}4${sep}19.mp4`),
+];
 
 // Competition calendar. Months are "YYYY-MM". The calendar and stage list build from this.
 const STAGES = [
@@ -588,11 +595,18 @@ document.getElementById("tracks").innerHTML = TRACKS.length
 // hero video
 (() => {
   const v = document.getElementById("hero-video");
-  if (!v || !HERO_VIDEO) return;
-  v.src = /^https?:/.test(HERO_VIDEO) ? HERO_VIDEO : VIDEO_BASE + encodeURIComponent(HERO_VIDEO);
+  const names = [].concat(HERO_VIDEO || []);
+  if (!v || !names.length) return;
+  let i = 0;
+  const url = n => /^https?:/.test(n) ? n : VIDEO_BASE + encodeURIComponent(n);
+  const tryNext = () => {
+    if (i >= names.length) { v.remove(); return; }
+    v.src = url(names[i++]);
+    v.play().catch(() => {});
+  };
   v.addEventListener("loadeddata", () => v.closest(".hero").classList.add("has-video"));
-  v.addEventListener("error", () => v.remove());
-  v.play().catch(() => {});
+  v.addEventListener("error", tryNext);
+  tryNext();
 })();
 
 // competition calendar
