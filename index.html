@@ -230,7 +230,7 @@ footer p{margin:.3rem 0}
     </div>
   </section>
 
-  <section class="band kings center" aria-labelledby="watch">
+  <section class="band kings center" id="watch-sec" aria-labelledby="watch">
     <div class="wrap">
       <h2 id="watch">Watch the jams</h2>
       <div class="reels" id="reels"></div>
@@ -317,7 +317,8 @@ const SUBMIT_TO = "hello@olympicjam.com";
 
 // Jam photos. Put the file name in quotes; add a caption after a | if you want one.
 // e.g. "my-photo.jpg | Venice Beach"
-const PHOTO_BASE = "https://pub-3e5ea9795f864561b6571d8e420b6b34.r2.dev/";
+const R2 = "https://pub-3e5ea9795f864561b6571d8e420b6b34.r2.dev/";
+const PHOTO_BASE = R2 + "photos/";
 const PHOTO_FILES = [
   "20190104-_DSC5063.jpg",
   "20190104-_DSC5066.jpg",
@@ -335,9 +336,17 @@ const PHOTOS = PHOTO_FILES.map(f => {
   return { src: PHOTO_BASE + encodeURIComponent(name), caption };
 });
 
-// Vertical videos: an .mp4 you uploaded, or a YouTube Shorts link.
-// e.g. { src: "videos/jam1.mp4" }  or  { src: "https://youtube.com/shorts/XXXXXXXX" }
-const VIDEOS = [];
+// Videos in the /videos folder. Just the file name, in quotes.
+// You can also add a YouTube Shorts link instead of a file name.
+const VIDEO_BASE = R2 + "videos/";
+const VIDEO_FILES = [
+  "jam promo feb 2026 2.mp4",
+  "vaughn.mp4",
+  "kasim.mp4",
+  "hqpm.mp4",
+  "vaughn interview.mp4",
+];
+const VIDEOS = VIDEO_FILES.map(f => ({ src: /^https?:/.test(f) ? f : VIDEO_BASE + encodeURIComponent(f) }));
 
 // Upcoming pop-up jams.
 // e.g. { when: "Mar 14", where: "Venice Beach, LA", theme: "Starting Blocks" }
@@ -369,6 +378,9 @@ photoEl.innerHTML = photos.map(p => `
   </figure>`).join("");
 
 // videos
+function videoFailed(v){ v.closest(".reel").remove(); if (!document.querySelector("#reels .reel")) document.getElementById("watch-sec").hidden = true; }
+// only one video plays at a time
+document.addEventListener("play", e => { document.querySelectorAll("#reels video").forEach(v => { if (v !== e.target) v.pause(); }); }, true);
 function ytId(u){ const m = u.match(/(?:shorts\/|youtu\.be\/|v=)([\w-]{6,})/); return m && m[1]; }
 const reelEl = document.getElementById("reels");
 const vids = VIDEOS.length ? VIDEOS : Array.from({length:4}, () => null);
@@ -377,7 +389,7 @@ reelEl.innerHTML = vids.map(v => {
   const id = /youtu/.test(v.src) && ytId(v.src);
   return id
     ? `<div class="reel"><iframe src="https://www.youtube.com/embed/${id}" title="Olympic Jam clip" loading="lazy" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`
-    : `<div class="reel"><video src="${esc(v.src)}" controls playsinline preload="metadata"></video></div>`;
+    : `<div class="reel"><video src="${esc(v.src)}#t=0.1" controls playsinline preload="metadata" onerror="videoFailed(this)"></video></div>`;
 }).join("");
 
 // pop-ups
